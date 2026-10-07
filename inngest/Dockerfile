@@ -1,6 +1,8 @@
 # Inngest publishes a working image; the only gap is a boot-time step, so this
 # adds one layer rather than rebuilding upstream's Go monorepo.
-FROM inngest/inngest:latest
+# Pinned so a rebuild never changes the server under us. To upgrade, bump
+# this tag deliberately and redeploy.
+FROM inngest/inngest:v1.46.0
 
 COPY inngest/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
