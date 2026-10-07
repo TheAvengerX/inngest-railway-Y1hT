@@ -78,10 +78,24 @@
 	# HTTP basic auth is the right shape for this half specifically: the browser
 	# replays it on the dashboard's own same-origin XHR, so one rule covers the
 	# UI and the API it calls. A bearer token would reach neither.
+	#
+	# Two things keep that replay working. The dashboard password is stripped
+	# before proxying, since upstream has no use for it and some of its routes
+	# (/dev) reject any Authorization header that is not a signing key. And an
+	# upstream 401 is answered as 403: a browser that gets a 401 for a request
+	# it sent credentials with treats the password as wrong and drops it, so
+	# every later XHR goes out bare and the login prompt comes back.
 	handle {
 		basic_auth {
 			{$DASHBOARD_USERNAME} {$DASHBOARD_PASSWORD_HASH}
 		}
-		reverse_proxy {$INNGEST_UPSTREAM}
+		reverse_proxy {$INNGEST_UPSTREAM} {
+			header_up -Authorization
+
+			@upstream_unauthorized status 401
+			handle_response @upstream_unauthorized {
+				respond 403
+			}
+		}
 	}
 }
